@@ -1,0 +1,53 @@
+FatFs 提供下面的函数API：
+f_mount - 注册/注销一个工作区域（Work Area）
+
+f_open - 打开/创建一个文件f_close - 关闭一个文件
+
+f_read - 读文件f_write - 写文件
+
+f_lseek - 移动文件读/写指针
+
+f_truncate - 截断文件
+
+f_sync - 冲洗缓冲数据 Flush Cached Data
+
+f_opendir - 打开一个目录
+
+f_readdir - 读取目录条目
+
+f_getfree - 获取空闲簇 Get Free Clusters
+
+f_stat - 获取文件状态
+
+f_mkdir - 创建一个目录
+
+f_unlink - 删除一个文件或目录
+
+f_chmod - 改变属性（Attribute）
+
+f_utime - 改变时间戳（Timestamp）
+
+f_rename -?重命名/移动一个文件或文件夹
+
+f_mkfs - 在驱动器上创建一个文件系统
+
+f_forward - 直接转移文件数据到一个数据流 Forward file data to the stream directly
+
+f_gets - 读一个字符串
+
+f_putc - 写一个字符
+
+f_puts - 写一个字符串
+
+f_printf - 写一个格式化的字符磁盘I/O接口
+
+f_tell - 获取当前读/写指针
+
+f_eof - 测试一个文件是否到达文件末尾
+
+f_size - 获取一个文件大小
+
+f_error - 测试一个文件是否出错
+————————————————
+版权声明：本文为CSDN博主「偏执灬」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/sinat_23338865/article/details/53100735

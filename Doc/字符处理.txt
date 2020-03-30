@@ -1,0 +1,124 @@
+
+
+
+https://www.cnblogs.com/jianqiang2010/archive/2010/09/20/1831654.html
+
+
+1.1. 初始化字符串
+#include <string.h>
+void *memset(void *s, int c, size_t n);
+返回值：s指向哪，返回的指针就指向哪
+memset函数把s所指的内存地址开始的n个字节都填充为c的值。通常c的值为0，把一块内存区清零。例如定义char buf[10];，如果它是全局变量或静态变量，则自动初始化为0（位于.bss段），如果它是函数的局部变量，则初值不确定，可以用memset(buf, 0, 10)清零，由malloc分配的内存初值也是不确定的，也可以用memset清零。
+
+1.2. 取字符串的长度
+#include <string.h>
+size_t strlen(const char *s);
+返回值：字符串的长度
+strlen函数返回s所指的字符串的长度。该函数从s所指的第一个字符开始找'\0'字符，一旦找到就返回，返回的长度不包括'\0'字符在内。例如定义char buf[] = "hello";，则strlen(buf)的值是5，但要注意，如果定义char buf[5] = "hello";，则调用strlen(buf)是危险的，会造成数组访问越界。
+
+1.3. 拷贝字符串
+#include <string.h>
+void *memcpy(void *dest, const void *src, size_t n);
+void *memmove(void *dest, const void *src, size_t n);
+
+在第 1 节 “本章的预备知识”中介绍了strcpy和strncpy函数，拷贝以'\0'结尾的字符串，strncpy还带一个参数指定最多拷贝多少个字节，此外，strncpy并不保证缓冲区以'\0'结尾。现在介绍memcpy和memmove函数。
+返回值：dest指向哪，返回的指针就指向哪
+memcpy函数从src所指的内存地址拷贝n个字节到dest所指的内存地址，和strncpy不同，memcpy并不是遇到'\0'就结束，而是一定会拷贝完n个字节。这里的命名规律是，以str开头的函数处理以'\0'结尾的字符串，而以mem开头的函数则不关心'\0'字符，或者说这些函数并不把参数当字符串看待，因此参数的指针类型是void *而非char *。
+
+memmove也是从src所指的内存地址拷贝n个字节到dest所指的内存地址，虽然叫move但其实也是拷贝而非移动。但是和memcpy有一点不同，memcpy的两个参数src和dest所指的内存区间如果重叠则无法保证正确拷贝，而memmove却可以正确拷贝。假设定义了一个数组char buf[20] = "hello world\n";，如果想把其中的字符串往后移动一个字节（变成"hhello world\n"），调用memcpy(buf + 1, buf, 13)是无法保证正确拷贝的：
+
+例 25.1. 错误的memcpy调用
+
+#include <stdio.h>#include <string.h>int main(void){  char buf[20] = "hello world\n";  memcpy(buf + 1, buf, 13);  printf(buf);  return 0;}
+
+在我的机器上运行的结果是hhhllooworrd。如果把代码中的memcpy改成memmove则可以保证正确拷贝。memmove可以这样实现：
+
+void *memmove(void *dest, const void *src, size_t n){  char temp[n];  int i;  char *d = dest;  const char *s = src;  for (i = 0; i < n; i++)    temp[i] = s[i];  for (i = 0; i < n; i++)    d[i] = temp[i];  return dest;}
+借助于一个临时缓冲区temp，即使src和dest所指的内存区间有重叠也能正确拷贝。思考一下，如果不借助于临时缓冲区能不能正确处理重叠内存区间的拷贝？
+
+用memcpy如果得到的结果是hhhhhhhhhhhhhh倒不奇怪，可为什么会得到hhhllooworrd这个奇怪的结果呢？根据这个结果猜测的一种可能的实现是：
+
+void *memcpy(void *dest, const void *src, size_t n){  char *d = dest;  const char *s = src;  int *di;  const int *si;  int r = n % 4;  while (r--)    *d++ = *s++;  di = (int *)d;  si = (const int *)s;  n /= 4;  while (n--)    *di++ = *si++;  return dest;}
+在32位的x86平台上，每次拷贝1个字节需要一条指令，每次拷贝4个字节也只需要一条指令，memcpy函数的实现尽可能4个字节4个字节地拷贝，因而得到上述结果。
+
+C99的restrict关键字
+我们来看一个跟memcpy/memmove类似的问题。下面的函数将两个数组中对应的元素相加，结果保存在第三个数组中。
+
+void vector_add(const double *x, const double *y, double *result){  int i;  for (i = 0; i < 64; ++i)    result[i] = x[i] + y[i];}
+如果这个函数要在多处理器的计算机上执行，编译器可以做这样的优化：把这一个循环拆成两个循环，一个处理器计算i值从0到31的循环，另一个处理器计算i值从32到63的循环，这样两个处理器可以同时工作，使计算时间缩短一半。但是这样的编译优化能保证得出正确结果吗？假如result和x所指的内存区间是重叠的，result[0]其实是x[1]，result[i]其实是x[i+1]，这两个处理器就不能各干各的事情了，因为第二个处理器的工作依赖于第一个处理器的最终计算结果，这种情况下编译优化的结果是错的。这样看来编译器是不敢随便做优化了，那么多处理器提供的并行性就无法利用，岂不可惜？为此，C99引入restrict关键字，如果程序员把上面的函数声明为void vector_add(const double *restrict x, const double *restrict y, double *restrict result)，就是告诉编译器可以放心地对这个函数做优化，程序员自己会保证这些指针所指的内存区间互不重叠。
+
+由于restrict是C99引入的新关键字，目前Linux的Man Page还没有更新，所以都没有restrict关键字，本书的函数原型都取自Man Page，所以也都没有restrict关键字。但在C99标准中库函数的原型都在必要的地方加了restrict关键字，在C99中memcpy的原型是void *memcpy(void * restrict s1, const void * restrict s2, size_t n);，就是告诉调用者，这个函数的实现可能会做些优化，编译器也可能会做些优化，传进来的指针不允许指向重叠的内存区间，否则结果可能是错的，而memmove的原型是void *memmove(void *s1, const void *s2, size_t n);，没有restrict关键字，说明传给这个函数的指针允许指向重叠的内存区间。在restrict关键字出现之前都是用自然语言描述哪些函数的参数不允许指向重叠的内存区间，例如在C89标准的库函数一章开头提到，本章描述的所有函数，除非特别说明，都不应该接收两个指针参数指向重叠的内存区间，例如调用sprintf时传进来的格式化字符串和结果字符串的首地址相同，诸如此类的调用都是非法的。本书也遵循这一惯例，除非像memmove这样特别说明之外，都表示“不允许”。
+
+关于restrict关键字更详细的解释可以参考[BeganFORTRAN]。
+
+字符串的拷贝也可以用strdup(3)函数，这个函数不属于C标准库，是POSIX标准中定义的，POSIX标准定义了UNIX系统的各种接口，包含C标准库的所有函数和很多其它的系统函数，在第 2 节 “C标准I/O库函数与Unbuffered I/O函数”将详细介绍POSIX标准。
+
+#include <string.h>char *strdup(const char *s);返回值：指向新分配的字符串
+这个函数调用malloc动态分配内存，把字符串s拷贝到新分配的内存中然后返回。用这个函数省去了事先为新字符串分配内存的麻烦，但是用完之后要记得调用free释放新字符串的内存。
+
+1.4. 连接字符串
+#include <string.h>char *strcat(char *dest, const char *src);char *strncat(char *dest, const char *src, size_t n);返回值：dest指向哪，返回的指针就指向哪
+strcat把src所指的字符串连接到dest所指的字符串后面，例如：
+
+char d[10] = "foo";char s[10] = "bar";strcat(d, s);printf("%s %s\n", d, s);
+调用strcat函数后，缓冲区s的内容没变，缓冲区d中保存着字符串"foobar"，注意原来"foo"后面的'\0'被连接上来的字符串"bar"覆盖掉了，"bar"后面的'\0'仍保留。
+
+strcat和strcpy有同样的问题，调用者必须确保dest缓冲区足够大，否则会导致缓冲区溢出错误。strncat函数通过参数n指定一个长度，就可以避免缓冲区溢出错误。注意这个参数n的含义和strncpy的参数n不同，它并不是缓冲区dest的长度，而是表示最多从src缓冲区中取n个字符（不包括结尾的'\0'）连接到dest后面。如果src中前n个字符没有出现'\0'，则取前n个字符再加一个'\0'连接到dest后面，所以strncat总是保证dest缓冲区以'\0'结尾，这一点又和strncpy不同，strncpy并不保证dest缓冲区以'\0'结尾。所以，提供给strncat函数的dest缓冲区的大小至少应该是strlen(dest)+n+1个字节，才能保证不溢出。
+
+1.5. 比较字符串
+#include <string.h>int memcmp(const void *s1, const void *s2, size_t n);int strcmp(const char *s1, const char *s2);int strncmp(const char *s1, const char *s2, size_t n);返回值：负值表示s1小于s2，0表示s1等于s2，正值表示s1大于s2
+memcmp从前到后逐个比较缓冲区s1和s2的前n个字节（不管里面有没有'\0'），如果s1和s2的前n个字节全都一样就返回0，如果遇到不一样的字节，s1的字节比s2小就返回负值，s1的字节比s2大就返回正值。
+
+strcmp把s1和s2当字符串比较，在其中一个字符串中遇到'\0'时结束，按照上面的比较准则，"ABC"比"abc"小，"ABCD"比"ABC"大，"123A9"比"123B2"小。
+
+strncmp的比较结束条件是：要么在其中一个字符串中遇到'\0'结束（类似于strcmp），要么比较完n个字符结束（类似于memcmp）。例如，strncmp("ABCD", "ABC", 3)的返回值是0，strncmp("ABCD", "ABC", 4)的返回值是正值。
+
+#include <strings.h>int strcasecmp(const char *s1, const char *s2);int strncasecmp(const char *s1, const char *s2, size_t n);返回值：负值表示s1小于s2，0表示s1等于s2，正值表示s1大于s2
+这两个函数和strcmp/strncmp类似，但在比较过程中忽略大小写，大写字母A和小写字母a认为是相等的。这两个函数不属于C标准库，是POSIX标准中定义的。
+
+1.6. 搜索字符串
+#include <string.h>char *strchr(const char *s, int c);char *strrchr(const char *s, int c);返回值：如果找到字符c，返回字符串s中指向字符c的指针，如果找不到就返回NULL
+strchr在字符串s中从前到后查找字符c，找到字符c第一次出现的位置时就返回，返回值指向这个位置，如果找不到字符c就返回NULL。strrchr和strchr类似，但是从右向左找字符c，找到字符c第一次出现的位置就返回，函数名中间多了一个字母r可以理解为Right-to-left。
+
+#include <string.h>char *strstr(const char *haystack, const char *needle);返回值：如果找到子串，返回值指向子串的开头，如果找不到就返回NULL
+strstr在一个长字符串中从前到后找一个子串（Substring） ，找到子串第一次出现的位置就返回，返回值指向子串的开头，如果找不到就返回NULL。这两个参数名很形象，在干草堆haystack中找一根针needle，按中文的说法叫大海捞针，显然haystack是长字符串，needle是要找的子串。
+
+搜索子串有一个显而易见的算法，可以用两层的循环，外层循环把haystack中的每一个字符的位置依次假定为子串的开头，内层循环从这个位置开始逐个比较haystack和needle的每个字符是否相同。想想这个算法最多需要做多少次比较？其实有比这个算法高效得多的算法，有兴趣的读者可以参考[算法导论]。
+
+1.7. 分割字符串
+很多文件格式或协议格式中会规定一些分隔符或者叫界定符（Delimiter） ，例如/etc/passwd文件中保存着系统的帐号信息：
+
+$ cat /etc/passwdroot:x:0:0:root:/root:/bin/bashdaemon:x:1:1:daemon:/usr/sbin:/bin/shbin:x:2:2:bin:/bin:/bin/sh...
+每条记录占一行，也就是说记录之间的分隔符是换行符，每条记录又由若干个字段组成，这些字段包括用户名、密码、用户id、组id、个人信息、主目录、登录Shell，字段之间的分隔符是:号。解析这样的字符串需要根据分隔符把字符串分割成几段，C标准库提供的strtok函数可以很方便地完成分割字符串的操作。tok是Token的缩写，分割出来的每一段字符串称为一个Token。
+
+#include <string.h>char *strtok(char *str, const char *delim);char *strtok_r(char *str, const char *delim, char **saveptr);返回值：返回指向下一个Token的指针，如果没有下一个Token了就返回NULL
+参数str是待分割的字符串，delim是分隔符，可以指定一个或多个分隔符，strtok遇到其中任何一个分隔符就会分割字符串。看下面的例子。
+
+例 25.2. strtok
+
+#include <stdio.h>#include <string.h>int main(void){  char str[] = "root:x::0:root:/root:/bin/bash:";  char *token;  token = strtok(str, ":");  printf("%s\n", token);  while ( (token = strtok(NULL, ":")) != NULL)    printf("%s\n", token);  return 0;}
+
+$ ./a.outrootx0root/root/bin/bash
+结合这个例子，strtok的行为可以这样理解：冒号是分隔符，把"root:x::0:root:/root:/bin/bash:"这个字符串分隔成"root"、"x"、""、"0"、"root"、"/root"、"/bin/bash"、""等几个Token，但空字符串的Token被忽略。第一次调用要把字符串首地址传给strtok的第一个参数，以后每次调用第一个参数只要传NULL就可以了，strtok函数自己会记住上次处理到字符串的什么位置（显然这是通过strtok函数中的一个静态指针变量记住的）。
+
+用gdb跟踪这个程序，会发现str字符串被strtok不断修改，每次调用strtok把str中的一个分隔符改成'\0'，分割出一个小字符串，并返回这个小字符串的首地址。
+
+(gdb) startBreakpoint 1 at 0x8048415: file main.c, line 5.Starting program: /home/akaedu/a.outmain () at main.c:55 {(gdb) n6   char str[] = "root:x::0:root:/root:/bin/bash:";(gdb)9   token = strtok(str, ":");(gdb) display str1: str = "root:x::0:root:/root:/bin/bash:"(gdb) n10    printf("%s\n", token);1: str = "root\000x::0:root:/root:/bin/bash:"(gdb)root11    while ( (token = strtok(NULL, ":")) != NULL)1: str = "root\000x::0:root:/root:/bin/bash:"(gdb)12      printf("%s\n", token);1: str = "root\000x\000:0:root:/root:/bin/bash:"(gdb)x11    while ( (token = strtok(NULL, ":")) != NULL)1: str = "root\000x\000:0:root:/root:/bin/bash:"
+刚才提到在strtok函数中应该有一个静态指针变量记住上次处理到字符串中的什么位置，所以不需要每次调用时都把字符串中的当前处理位置传给strtok，但是在函数中使用静态变量是不好的，以后会讲到这样的函数是不可重入的。strtok_r函数则不存在这个问题，它的内部没有静态变量，调用者需要自己分配一个指针变量来维护字符串中的当前处理位置，每次调用时把这个指针变量的地址传给strtok_r的第三个参数，告诉strtok_r从哪里开始处理，strtok_r返回时再把新的处理位置写回到这个指针变量中（这是一个Value-result参数）。strtok_r末尾的r就表示可重入（Reentrant），这个函数不属于C标准库，是在POSIX标准中定义的。关于strtok_r的用法Man Page上有一个很好的例子：
+
+例 25.3. strtok_r
+
+#include <stdio.h>#include <stdlib.h>#include <string.h>int main(int argc, char *argv[]){  char *str1, *str2, *token, *subtoken;  char *saveptr1, *saveptr2;  int j;  if (argc != 4) {    fprintf(stderr, "Usage: %s string delim subdelim\n",      argv[0]);    exit(EXIT_FAILURE);  }  for (j = 1, str1 = argv[1]; ; j++, str1 = NULL) {    token = strtok_r(str1, argv[2], &saveptr1);    if (token == NULL)      break;    printf("%d: %s\n", j, token);    for (str2 = token; ; str2 = NULL) {      subtoken = strtok_r(str2, argv[3], &saveptr2);      if (subtoken == NULL)        break;      printf(" --> %s\n", subtoken);    }  }  exit(EXIT_SUCCESS);}
+
+$ ./a.out 'a/bbb///cc;xxx:yyy:' ':;' '/'1: a/bbb///cc --> a --> bbb --> cc2: xxx --> xxx3: yyy --> yyy
+a/bbb///cc;xxx:yyy:这个字符串有两级分隔符，一级分隔符是:号或;号，把这个字符串分割成a/bbb///cc、xxx、yyy三个子串，二级分隔符是/，只有第一个子串中有二级分隔符，它被进一步分割成a、bbb、cc三个子串。由于strtok_r不使用静态变量，而是要求调用者自己保存字符串的当前处理位置，所以这个例子可以在按一级分隔符分割整个字符串的过程中穿插着用二级分隔符分割其中的每个子串。建议读者用gdb的display命令跟踪argv[1]、saveptr1和saveptr2，以理解strtok_r函数的工作方式。
+
+Man Page的BUGS部分指出了用strtok和strtok_r函数需要注意的问题：
+
+这两个函数要改写字符串以达到分割的效果
+
+这两个函数不能用于常量字符串，因为试图改写.rodata段会产生段错误
+
+在做了分割之后，字符串中的分隔符就被'\0'覆盖了
+
+strtok函数使用了静态变量，它不是线程安全的，必要时应该用可重入的strtok_r函数，以后再详细介绍“可重入”和“线程安全”这两个概念

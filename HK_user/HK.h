@@ -1,0 +1,16 @@
+
+
+#ifndef  __HK_H
+#define  __HK_H
+
+//#define PWREN_CAMERA1_H()		HAL_GPIO_WritePin(GPIOG, GPIO_PIN_9, GPIO_PIN_SET)
+//#define PWREN_CAMERA1_L()		HAL_GPIO_WritePin(GPIOG, GPIO_PIN_9, GPIO_PIN_RESET)
+
+//#define PWREN_CAMERA2_H()		HAL_GPIO_WritePin(GPIOG, GPIO_PIN_10, GPIO_PIN_SET)
+//#define PWREN_CAMERA2_L()		HAL_GPIO_WritePin(GPIOG, GPIO_PIN_10, GPIO_PIN_RESET)
+
+
+
+
+#endif /* __HK_H */
+

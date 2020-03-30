@@ -1,0 +1,98 @@
+UCOSIII-常用API 
+
+代码临界区
+CPU_SR_ALLOC()
+OS_CRITICAL_ENTER()
+OS_CRITICAL_EXIT()
+延时
+OSTimeDly()
+OSTimeDlyHMSM(0,0,1,0,OS_OPT_TIME_HMSM_STRICT,&err)
+OSTimeDlyResume()
+ 
+钩子函数
+void App_OS_IdleTaskHook (void)
+在空闲任务的钩子函数 OSIdleTaskHook()中不能出现可以让空闲任务进入等待态的代码！
+ 
+创建删除函数
+OSTaskCreate（）
+OSTaskDel((OS_TCB*)&Task2_TaskTCB,&err)
+ 
+挂起恢复任务
+OSTaskSuspend()
+OSTaskResume()
+ 
+时间片轮转调度
+OSSchedRoundRobinCfg(DEF_ENABLED,1,&err) 时间片轮转调度初始化
+void OSSchedRoundRobinYield (OS_ERR *p_err) 放弃时间片
+ 
+中断函数
+OSIntEnter() 进入中断时放在最前面
+OSIntExit() 放在中断函数最下面，用于退出中断时做一次任务切换
+ 
+定时器
+OSTmrCreate()
+OSTmrStart()
+OSTmrStop()
+在定时器的回调函数里面一定要注意避免使用任何可以阻塞或者删除掉定时器任务的函数！
+ 
+信号量
+OSSemCreate() 创建一个信号量
+OSSemDel() 删除一个信号量
+OSSemPend() 等待一个信号量
+OSSemPost() 释放一个信号量
+OSSemPendAbort() 取消等待
+OSSemSet() 强制设置一个信号量的值
+ 
+互斥信号量（解决优先级反转）
+OSMutexCreate() 创建一个互斥信号量
+OSMutexDel() 删除一个互斥型信号量
+OSMutexPend() 等待一个互斥型信号量
+OSMutexPost() 释放一个互斥型信号量
+OSMutexPendAbort() 取消等待
+只有任务才能使用互斥信号量(中断服务程序则不可以)
+ 
+任务内建信号量
+OSTaskSemPend() 等待任务信号量
+OSTaskSemPost() 发布任务信号量
+OSTaskSemPendAbort() 取消等待任务信号量
+OSTaskSemSet() 强行设置任务信号量计数
+ 
+消息队列
+OSQCreate() 创建一个消息队列
+OSQDel() 删除一个消息队列
+OSQFlush() 清空一个消息队列
+OSQPend() 等待消息队列
+OSQPendAbort() 取消等待消息队列
+OSQPost() 向消息队列发送一条消息
+中断服务程序只能使用 OSQPost()函数！
+ 
+内建消息队列
+OSTaskQPend() 等待消息
+OSTaskQPost() 向任务发送一条消息
+OSTaskQPendAbort() 取消等待消息
+OSTaskQFlush() 清空任务的消息队列
+ISR只能OSTaskQPost()！
+ 
+同时请求多个内建对象
+UCOSIII 中只支持同时等待多个信号量和消息队列， 不支持同时等待多个事件标志组和互斥信号量
+OSPendMulti()
+
+
+//.......任务调度点......................................
+1.使用延时函数OSTimeDly()或者OSTimeDlyHMSM()；
+2.创建任务；
+3.删除任务；
+4.任务通过调用OSTaskSuspend()将自身挂起；
+5.任务解挂某个挂起的任务；
+6.用户调用OSSched()；
+7.释放信号量或者发送消息，也可通过配置相应的参数不发生任务调度；
+8.任务等待的事情还没发生(等待信号量，消息队列等)；
+9.任务取消等待；
+10.删除一个内核对象；
+11.任务改变自身的优先级或者其他任务的优先级；
+12.退出所有的嵌套中断；
+13.通过OSSchedUnlock()给调度器解锁；
+14.任务调用OSSchedRoundRobinYield()放弃其执行时间片。
+
+这么多么多调度点中，前六个尤其重要！
+

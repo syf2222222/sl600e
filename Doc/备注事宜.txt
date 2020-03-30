@@ -1,0 +1,65 @@
+
+
+//需注意
+1. 多任务同时调用一个函数时,全局参数有可能被改动,需要排查避免
+2. 奇数地址强制转换为16位问题
+3. 大小端问题
+4. 重复.多任务同时调用一个函数 power_set_cam1(uint8_t flag)
+
+//待进步
+//1. 低功耗
+2. 无线升级,uboot
+
+//待改进
+
+//1. sd数据要删,异常需要格式化?
+1. 需要增加SD_err次数并保存,超过一定次数格式化
+2. usart3异常问题未解决,只是重启----改DMA,仍有可能出错
+//3. 数据量目前采用 256字节索引,需更改
+3. 数据索引65536, 采集数据采一次存一次SD,太频繁,且一次只有一条数据,需改为多条数据存一次SD,立即上传数据不需存储
+4. 数据采集异常数据需要丢弃才能进行下一数据的传送
+5. DTU设置时的延时时间,需判定uCOS系统是否启动,没启动的话需要改为普通延时.
+6. 没有SD卡怎么处理
+7. 睡眠有时换不醒
+9. 球机突然断电仍有可能造成LWIP阻塞？
+
+//待验证
+1. 时钟可靠性待验证.
+2. 重新校时后,除以校时前后时间段的定时事件可能错乱
+3. 时钟,串口异常跟SRAM读写速度有关?
+4. sram写进sd卡只有512字节长度一下才能成功?
+5. 中断与外部同时操作 waikup_times, 值改变不了?
+
+//当前问题
+//1. LWIP阻塞问题
+2. 睡眠唤醒异常
+3. SD卡异常
+
+//未解之谜
+1. 睡眠时按校时会发 00指令？
+
+//生成bin
+C:\Keil_v5\ARM\ARMCC\bin\fromelf.exe  --bin -o  ./Obj/@L.bin ./Obj/@L.axf
+
+//存储IP与实际IP不对应
+
+//printf(ip_host,"%d.%d.%d.%d",IP_ADDR0,IP_ADDR1,IP_ADDR2,IP_ADDR3);
+
+
+#if (CPU_CFG_TS_TMR_EN == DEF_ENABLED)
+CPU_TS_TMR  CPU_TS_TmrRd(void);
+#endif
+
+#if (CPU_CFG_TS_TMR_EN == DEF_ENABLED)
+CPU_TS_TMR  CPU_TS_TmrRd (void)
+{
+    return ((CPU_TS_TMR)DWT_CYCCNT);
+}
+#endif
+
+#if      OS_CFG_TS_EN == 1u
+#define  OS_TS_GET()               (CPU_TS)CPU_TS_TmrRd()   /* See Note #2a.                                          */
+#else
+#define  OS_TS_GET()               (CPU_TS)0u
+#endif
+

@@ -1,0 +1,341 @@
+ 
+
+switch(data[2])
+			{
+				uint16_t len;
+				
+				case COLOR_CMD:
+				{
+					len_temp=0;
+					
+					method_len = sprintf((char *)http_send_buf, "PUT /Image/channels/1/Color");					
+					len_temp = method_len;		
+					
+					memcpy(http_send_buf + len_temp, " HTTP/1.1\r\n", sizeof(" HTTP/1.1\r\n") - 1);		
+				  len_temp += sizeof(" HTTP/1.1\r\n") - 1;
+					
+					memcpy(http_send_buf + len_temp, "Authorization: Basic YWRtaW46c2Npc3VuMzIwNg==\r\n", sizeof("Authorization: Basic YWRtaW46c2Npc3VuMzIwNg==\r\n") - 1);
+					len_temp += sizeof("Authorization: Basic YWRtaW46c2Npc3VuMzIwNg==\r\n") - 1;
+					
+					len = sizeof("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n") - 1;
+					len += sizeof("<Color>\r\n") - 1;
+					len += sizeof("<brightnessLevel></brightnessLevel>\r\n") - 1;
+					len += sizeof("<contrastLevel></contrastLevel>\r\n") - 1;
+					len += sizeof("<saturationLevel></saturationLevel>\r\n") - 1;
+					len += sizeof("</Color>\r\n\r\n") - 1;
+
+					len += sprintf((char *)http_send_buf+len_temp, "%u", CameraV[ch].Config[2]);
+					len += sprintf((char *)http_send_buf+len_temp, "%u", CameraV[ch].Config[3]);
+					len += sprintf((char *)http_send_buf+len_temp, "%u", CameraV[ch].Config[4]);
+
+					str_len = sprintf((char *)http_send_buf+len_temp,						
+						"Content-Type:text/xml\r\n"
+					  "Host: %u.%u.%u.%u\r\n"
+						"Content-Length: %u"
+						"\r\n\r\n"
+						"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n"
+						"<Color>\r\n"
+						"<brightnessLevel>%u</brightnessLevel>\r\n"
+						"<contrastLevel>%u</contrastLevel>\r\n"
+						"<saturationLevel>%u</saturationLevel>\r\n"
+						"</Color>\r\n\r\n",
+					  CameraV[ch].IP[0], CameraV[ch].IP[1], CameraV[ch].IP[2], CameraV[ch].IP[3],
+						len,
+						CameraV[ch].Config[2],
+						CameraV[ch].Config[3],
+						CameraV[ch].Config[4]);
+					
+					len_temp += str_len;        	
+				} 
+				break;
+				case RESOLUTION_CMD:			//¡¤?¡À??¨º
+				{				
+					len_temp=0;
+					
+					method_len = sprintf((char *)http_send_buf, "PUT /Streaming/channels/1");					
+					len_temp = method_len;		
+					
+					memcpy(http_send_buf + len_temp, " HTTP/1.1\r\n", sizeof(" HTTP/1.1\r\n") - 1);		
+				  len_temp += sizeof(" HTTP/1.1\r\n") - 1;
+					
+					memcpy(http_send_buf + len_temp, "Authorization: Basic YWRtaW46c2Npc3VuMzIwNg==\r\n", sizeof("Authorization: Basic YWRtaW46c2Npc3VuMzIwNg==\r\n") - 1);
+					len_temp += sizeof("Authorization: Basic YWRtaW46c2Npc3VuMzIwNg==\r\n") - 1;
+					
+					uint16_t width;
+					uint16_t height;
+
+					switch(CameraV[ch].Config[1])
+					{
+						case 2:
+										width =  640;
+										height = 480;
+										break;
+						case 3:
+										width =  704;
+										height = 576;
+										break;
+						case 4:
+										width =  800;
+										height = 600;
+										break;
+						case 5:
+										width = 1024;
+										height = 768;
+										break;
+						case 6:
+										width =  1280;
+										height = 1024;
+										break;
+						case 7:
+										width = 1280;
+										height = 720;
+										break;						
+						case 8:
+										width = 1920;
+										height = 1080;
+										break;
+						case 9:
+										width = 1280;
+										height = 960;
+										break;
+						case 10:
+										width = 2048;
+										height = 1536;
+										break;
+						default:
+										width = 1280;
+										height = 720;
+										break;
+					}
+
+					len = sizeof("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n") - 1;
+					len += sizeof("<StreamingChannel>\r\n") - 1;
+					len += sizeof("<Video>\r\n") - 1;
+					len += sizeof("<videoInputChannelID>1</videoInputChannelID>\r\n") - 1;
+					len += sizeof("<videoResolutionWidth></videoResolutionWidth>\r\n") - 1;
+					len += sizeof("<videoResolutionHeight></videoResolutionHeight>\r\n") - 1;
+					len += sizeof("<videoQualityControlType>CBR</videoQualityControlType>\r\n") - 1;
+					len += sizeof("<constantBitRate>2048</constantBitRate>\r\n") - 1;
+					len += sizeof("<maxFrameRate>2500</maxFrameRate>\r\n") - 1;
+					len += sizeof("</Video>\r\n") - 1;
+					len += sizeof("</StreamingChannel>\r\n\r\n") - 1;
+
+					len += sprintf((char *)http_send_buf+len_temp, "%u", width);
+					len += sprintf((char *)http_send_buf+len_temp, "%u", height);
+
+					str_len = sprintf((char *)http_send_buf+len_temp,
+						"Content-Type:text/xml\r\n"
+					  "Host: %u.%u.%u.%u\r\n"
+						"Content-Length: %u"
+						"\r\n\r\n"
+						"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n"
+						"<StreamingChannel>\r\n"
+						"<Video>\r\n"
+						"<videoInputChannelID>1</videoInputChannelID>\r\n"
+						"<videoResolutionWidth>%u</videoResolutionWidth>\r\n"
+						"<videoResolutionHeight>%u</videoResolutionHeight>\r\n"
+						"<videoQualityControlType>CBR</videoQualityControlType>\r\n"
+						"<constantBitRate>2048</constantBitRate>\r\n"
+						"<maxFrameRate>2500</maxFrameRate>\r\n"
+						"</Video>\r\n"
+						"</StreamingChannel>\r\n\r\n",
+					  CameraV[ch].IP[0], CameraV[ch].IP[1], CameraV[ch].IP[2], CameraV[ch].IP[3],
+						len,
+						width,
+						height);	
+					
+					len_temp += str_len;        					
+				}
+        break;
+				case PRESETSET_CMD://?¡è????
+				{
+					  len_temp=0;
+						if(0 == data[4])						//1:¨¦¨¨???¡è??¦Ì?; 0:¨¦?3y?¡è??¦Ì?
+						{		     
+							method_len = sprintf((char *)http_send_buf, "DELETE /PTZCtrl/channels/1/presets/%u", data[3]);
+							
+							method = "false";
+							len = sizeof("false") - 1;
+						}
+						else
+						{
+							method_len = sprintf((char *)http_send_buf, "PUT /PTZCtrl/channels/1/presets/%u", data[3]);
+							
+							method = "true";
+							len = sizeof("true") - 1;
+						}
+						len_temp = method_len;
+
+						memcpy(http_send_buf + len_temp, " HTTP/1.1\r\n", sizeof(" HTTP/1.1\r\n") - 1);		
+						len_temp += sizeof(" HTTP/1.1\r\n") - 1;	
+
+						memcpy(http_send_buf + len_temp, "Authorization: Basic YWRtaW46c2Npc3VuMzIwNg==\r\n", sizeof("Authorization: Basic YWRtaW46c2Npc3VuMzIwNg==\r\n") - 1);
+						len_temp += sizeof("Authorization: Basic YWRtaW46c2Npc3VuMzIwNg==\r\n") - 1;
+
+						len += 2 * sprintf((char *)(http_send_buf + len_temp), "%u", data[3]);						
+						len += sizeof("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n") - 1;						
+						len += sizeof("<PTZPreset>\r\n") - 1;						
+						len += sizeof("<id></id>\r\n") - 1;					
+						len += sizeof("<enabled></enabled>\r\n") - 1;					
+						len += sizeof("<presetName>Preset-</presetName>\r\n") - 1;						
+						len += sizeof("</PTZPreset>\r\n\r\n") - 1;				
+												
+						str_len = sprintf((char *)(http_send_buf + len_temp),
+							"Content-Type:text/xml\r\n"
+							"Host: %u.%u.%u.%u\r\n"
+							"Content-Length: %u"
+							"\r\n\r\n"
+							"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n"
+							"<PTZPreset>\r\n"
+							"<id>%u</id>\r\n"
+							"<enabled>%s</enabled>\r\n"
+							"<presetName>Preset-%u</presetName>\r\n"
+							"</PTZPreset>\r\n\r\n",
+							CameraV[ch].IP[0], CameraV[ch].IP[1], CameraV[ch].IP[2], CameraV[ch].IP[3],
+							len,
+							data[3],
+							method,
+							data[3]); 
+					  len_temp += str_len;
+				}
+         break;
+				case PRESETCALL_CMD:
+				{					
+					method_len = sprintf((char *)http_send_buf, "PUT /PTZCtrl/channels/1/presets/%u/goto", data[3]);					
+					len_temp = method_len;		
+					
+					memcpy(http_send_buf + len_temp, " HTTP/1.1\r\n", sizeof(" HTTP/1.1\r\n") - 1);		
+				  len_temp += sizeof(" HTTP/1.1\r\n") - 1;
+					
+					memcpy(http_send_buf + len_temp, "Authorization: Basic YWRtaW46c2Npc3VuMzIwNg==\r\n", sizeof("Authorization: Basic YWRtaW46c2Npc3VuMzIwNg==\r\n") - 1);
+					len_temp += sizeof("Authorization: Basic YWRtaW46c2Npc3VuMzIwNg==\r\n") - 1;
+					
+					str_len = sprintf((char *)http_send_buf+len_temp,"Host: %u.%u.%u.%u\r\n\r\n",
+					  CameraV[ch].IP[0], CameraV[ch].IP[1], CameraV[ch].IP[2], CameraV[ch].IP[3]);
+					
+					len_temp += str_len;  			
+				}
+        break; 
+				case PTZ_CMD:
+				{
+          len_temp=0;
+					
+					method_len = sprintf((char *)http_send_buf, "PUT /PTZCtrl/channels/1/continuous");					
+					len_temp = method_len;		
+					
+					memcpy(http_send_buf + len_temp, " HTTP/1.1\r\n", sizeof(" HTTP/1.1\r\n") - 1);		
+				  len_temp += sizeof(" HTTP/1.1\r\n") - 1;
+					
+					memcpy(http_send_buf + len_temp, "Authorization: Basic YWRtaW46c2Npc3VuMzIwNg==\r\n", sizeof("Authorization: Basic YWRtaW46c2Npc3VuMzIwNg==\r\n") - 1);
+					len_temp += sizeof("Authorization: Basic YWRtaW46c2Npc3VuMzIwNg==\r\n") - 1;
+					
+					len = sizeof("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n") - 1;
+					len += sizeof("<PTZData>\r\n") - 1;
+					len += sizeof("<pan></pan>\r\n") - 1;
+					len += sizeof("<tilt></tilt>\r\n") - 1;
+					len += sizeof("<zoom></zoom>\r\n") - 1;
+					len += sizeof("</PTZData>\r\n\r\n") - 1;
+
+					len += sprintf((char *)http_send_buf+len_temp, "%d", (int8_t)data[3]);
+					len += sprintf((char *)http_send_buf+len_temp, "%d", (int8_t)data[4]);
+					len += sprintf((char *)http_send_buf+len_temp, "%d", (int8_t)data[5]);		
+
+					str_len = sprintf((char *)http_send_buf+len_temp,
+						"Content-Type:text/xml\r\n"
+					  "Host: %u.%u.%u.%u\r\n"
+						"Content-Length: %u"						
+						"\r\n\r\n"
+						"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n"
+						"<PTZData>\r\n"
+						"<pan>%d</pan>\r\n"
+						"<tilt>%d</tilt>\r\n"
+						"<zoom>%d</zoom>\r\n"
+						"</PTZData>\r\n\r\n",
+						CameraV[ch].IP[0], CameraV[ch].IP[1], CameraV[ch].IP[2], CameraV[ch].IP[3],
+						len,
+						(int8_t)data[3],
+						(int8_t)data[4],
+						(int8_t)data[5]);
+					
+					len_temp += str_len;  	
+//          HAL_UART_Transmit(&huart1,http_send_buf,len_temp,10);//test							
+				} 
+        break;				
+				default:
+				{
+					goto ERR_HDR;
+				}
+			}
+			
+//	HAL_UART_Transmit(&huart1,http_send_buf,len_temp,10);//test
+		err = netconn_write(tcp_client_socket, http_send_buf, len_temp, NETCONN_COPY);
+		if (ERR_OK != err)
+		{
+			printf("Error: tcp write\r\n");
+			goto ERR_HDR;
+		}
+	}
+	recv_buf = netconn_recv(tcp_client_socket);
+	if (NULL == recv_buf)
+	{
+		printf("Error: tcp recv 3\r\n");
+		//printf("err = %d\r\n", tcp_client_socket->err);
+		goto ERR_HDR;
+	}
+
+	p = recv_buf->p;
+	if((NULL == p)|| (NULL == p->payload)|| (0 == p->len))
+	{
+		printf("Error: tcp recv 4\r\n");
+		goto ERR_HDR;
+	}
+  HAL_UART_Transmit(&huart1,p->payload,p->len,10);//test
+	if (0 != picture_paramter_process(p->payload, p->len))
+	{
+		printf("Error: picture_paramter_process\r\n");
+		goto ERR_HDR;
+	}
+	netbuf_delete(recv_buf);
+	netconn_close(tcp_client_socket);
+	netconn_delete(tcp_client_socket);
+	
+	if (data[2] == PRESETCALL_CMD)
+	{		 
+		 SystemV.camera_preset = data[3];//TGfxDataV.Preset
+
+		if (0 != data[3])
+		{
+			if (0 != data[4])
+			{
+				OSTimeDlyHMSM(0, 0, PRESET_GOTO_DELAY_S, 0);
+			}
+			else
+			{
+				OSTimeDlyHMSM(0, 0, 1, 0);
+			}
+		}
+		else
+		{
+			OSTimeDlyHMSM(0, 0, 0, 20);
+		}
+	}
+	else if (data[2] == PTZ_CMD)
+	{
+		if ((0 != data[3])|| (0 != data[4])|| (0 != data[5]))
+		{
+			OSTimeDlyHMSM(0, 0, 0, 1000 * EnvironmentV.PTMStep / 64);
+		}
+		else
+		{
+			OSTimeDlyHMSM(0, 0, 0, 20);
+		}
+	}
+	return 0;
+
+ERR_HDR:
+	netbuf_delete(recv_buf);
+	netconn_close(tcp_client_socket);
+	netconn_delete(tcp_client_socket);
+	printf("Error: %s\r\n", __FUNCTION__);
+	return -1;
+}
